@@ -4,6 +4,11 @@
 
 Share a nicely formatted diff of 2 fountain files.
 
+##### TODO
+
+- [ ] line number anchor links
+- [ ] handle boneyard and bracket comments
+
 ## Usage
 
 (1) Generate the diff:

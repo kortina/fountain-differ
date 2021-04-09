@@ -1,4 +1,5 @@
 <html>
+  <title>FountainDiffer</title>
   <style>
     div,
     span,
@@ -19,7 +20,7 @@
       margin: 0 auto;
       font-family: 'Courier Final Draft', 'Courier Screenplay', Courier;
       font-size: 12pt;
-      width: 63ch;
+      width: 68ch;
       max-width: 100vw;
     }
     #fountain-content ol {
@@ -44,11 +45,15 @@
       white-space: pre-wrap;
       text-indent: -0.6em;
     }
-    .git-add {
+    .diff-summary {
+      color: rgb(111, 66, 193);
+      opacity: 0.50;
+    }
+    .diff-add {
       background-color: rgb(240, 255, 244);
       color: rgb(34, 134, 58);
     }
-    .git-delete {
+    .diff-delete {
       background-color: rgb(255, 238, 240);
       color: rgb(179, 29, 40);
       text-decoration: line-through;
@@ -63,11 +68,16 @@
     .scene-slug {
       font-weight: bold;
     }
-    #fountain-content li.scene-slug::before {
-      font-weight: normal;
+    .character {
+      padding-left: 19ch;
     }
-    #fountain-content li.character::before {
-      padding-right: 5em;
+    .dialog {
+      padding-left: 10ch;
+      width: 34ch;
+      display: inline-block;
+    }
+    .parenthetical {
+      padding-left: 14ch;
     }
     #menu {
       color: #ccc;
@@ -248,12 +258,21 @@ index d30173f..8414f48 100644
         this.render();
       }
 
-      static classGitAdd(line) {
-        return line.match(/^\+/) ? 'git-add' : null;
+      static lineIsBlank(line) {
+        return typeof(line) == "string" && line.match(/^\s*$/);
       }
 
-      static classGitDelete(line) {
-        return line.match(/^-/) ? 'git-delete' : null;
+      static classDiffSummary(line) {
+        return (
+          line.match(/^(diff|index|\@\@) /) 
+        ) ? 'diff-summary' : null;
+      }
+      static classDiffAdd(line) {
+        return line.match(/^\+/) ? 'diff-add' : null;
+      }
+
+      static classDiffDelete(line) {
+        return line.match(/^-/) ? 'diff-delete' : null;
       }
 
       static classHeading(line) {
@@ -268,7 +287,7 @@ index d30173f..8414f48 100644
         return line.match(/^\s*(INT|EXT)\./) ? 'scene-slug' : null;
       }
 
-      static classCharacter(line) {
+      static classCharacter(line, nextLine) {
         // for some reason this expression is true for:
         //  PAUL (CONT’D)
         // but this method returns null....
@@ -276,17 +295,40 @@ index d30173f..8414f48 100644
           !this.classSceneSlug(line) 
           && line.match(/[A-Z]/)
           && !line.match(/[a-z]/)
+          && !this.lineIsBlank(nextLine)
         ) ? 'character' : null;
       }
 
-      static computeClasses(line) {
+      static classDialog(line, prevLine) {
+        return (
+          prevLine && (
+            this.classCharacter(prevLine, line)
+            || this.classParenthetical(prevLine)
+          )
+        ) ? 'dialog' : null;
+      }
+
+      static classParenthetical(line) {
+        return (
+          // prevLine 
+          // && this.classCharacter(prevLine, line)
+          // && 
+          line
+          && line.match(/^\s*\(.*\)/)
+        ) ? 'parenthetical' : null;
+      }
+
+      static computeClasses(line, prevLine, nextLine) {
         var classes =  [
-          this.classGitAdd(line),
-          this.classGitDelete(line),
+          this.classDiffSummary(line),
+          this.classDiffAdd(line),
+          this.classDiffDelete(line),
           this.classHeading(line),
           this.classSynopsis(line),
           this.classSceneSlug(line),
-          this.classCharacter(line)
+          this.classCharacter(line, nextLine),
+          this.classDialog(line, prevLine),
+          this.classParenthetical(line)
         ].filter(c => !!c);
         // if (line.match(/CONT/)) {
         //   debugger;
@@ -296,12 +338,20 @@ index d30173f..8414f48 100644
 
       render() {
         var d = document.createElement("ol");
-        this.lines.map(line => {
-          var p = document.createElement("li");
-          p.append(document.createTextNode(line));
-          p.className = FountainDiffer.computeClasses(line).join(" ");
-          d.appendChild(p);
+        var prevLine = null;
+        this.lines.map((line, i) => {
+          var nextLine = null;
+          if (i < this.lines.length - 1) {
+            nextLine = this.lines[i+1];
+          }
+          var e = document.createElement("li");
+          var s = document.createElement("span");
+          s.className = FountainDiffer.computeClasses(line, prevLine, nextLine).join(" ");
+          s.append(document.createTextNode(line));
+          e.appendChild(s);
+          d.appendChild(e);
           // console.log(`render: ${line}`);
+          prevLine = line;
         });
         var fc = document.getElementById("fountain-content");
         fc.innerHTML = '';
@@ -326,38 +376,11 @@ index d30173f..8414f48 100644
       }
     }
 
-    function moveTo(i) {
-      document.location.hash = `#${i}`;
-      renderIndex(i);
-    }
-
-    function currentIndex() {
-      var currentIndexStr = document.location.hash || '#0';
-      return parseInt(currentIndexStr.replace('#', ''), 10);
-    }
-
-    function moveLeft() {
-      moveTo(Math.max(currentIndex() - 1, 0));
-    }
-    function moveRight() {
-      var max = window.SLIDES ? window.SLIDES.length - 1 : 0;
-      moveTo(Math.min(currentIndex() + 1, max));
-    }
-
     function onKey(e) {
       if (e.target.nodeName == 'INPUT') {
         return;
       }
       switch (e.code) {
-        case 'ArrowLeft':
-          captureEvent(e);
-          return moveLeft();
-        case 'ArrowRight':
-          captureEvent(e);
-          return moveRight();
-        case 'KeyN':
-          captureEvent(e);
-          return openSpeakerNotes();
         case 'KeyM':
           captureEvent(e);
           return toggleMenu();
@@ -375,27 +398,6 @@ index d30173f..8414f48 100644
     function captureEvent(e) {
       if (e.target.nodeName == 'BODY') {
         e.preventDefault();
-      }
-    }
-
-    function openSpeakerNotes() {
-      window.SN_WINDOW = window.open('slider-notes.html', 'secondary', 'width=600,height=1000');
-      window.SN_WINDOW.onload = function () {
-        renderSpeakerNotes(currentIndex());
-      };
-    }
-
-    function renderSpeakerNotes(i) {
-      if (window.SN_WINDOW) {
-        if (!window.SLIDES || window.SLIDES.length < i) {
-          return;
-        }
-        var writer = new commonmark.HtmlRenderer();
-        var s = window.SLIDES[i];
-        var html = writer.render(s.speakerNotes);
-        window.SN_WINDOW.render(html);
-      } else {
-        console.log('Speaker notes window is not open.');
       }
     }
 
@@ -433,9 +435,6 @@ index d30173f..8414f48 100644
       <div id="help-info" style="display: none">
         <pre>
 Keyboard Shortcuts
-n   open speaker notes
-→   next slide
-←   prev slide
 m   show / hide menu
 ?   show / hide help
                 </pre
