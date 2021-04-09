@@ -1,0 +1,447 @@
+<html>
+  <style>
+    div,
+    span,
+    form,
+    input {
+      padding: 0;
+      margin: 0;
+    }
+    body {
+      font-family: Helvetica, sans-serif;
+      font-size: 30px;
+      padding: 0;
+      margin: 0;
+      text-align: center;
+    }
+    #fountain-content {
+      text-align: left;
+      margin: 0 auto;
+      font-family: 'Courier Final Draft', 'Courier Screenplay', Courier;
+      font-size: 12pt;
+      width: 63ch;
+      max-width: 100vw;
+    }
+    #fountain-content ol {
+    list-style: none;
+    counter-reset: li;
+    }
+    #fountain-content li {
+      counter-increment: li;
+    }
+    #fountain-content li::before {
+      content: counter(li);
+      color: #cccccc;
+      display: inline-block;
+      width: 5em;
+      margin-left: -5em;
+      position: absolute;
+    }
+    #fountain-content li,
+    #fountain-content p {
+      margin: 0;
+      padding: 0;
+      white-space: pre-wrap;
+      text-indent: -0.6em;
+    }
+    .git-add {
+      background-color: rgb(240, 255, 244);
+      color: rgb(34, 134, 58);
+    }
+    .git-delete {
+      background-color: rgb(255, 238, 240);
+      color: rgb(179, 29, 40);
+      text-decoration: line-through;
+    }
+    .heading {
+      font-weight: bold;
+      color: rgb(111, 66, 193);
+    }
+    .synopsis {
+      opacity: 0.50;
+    }
+    .scene-slug {
+      font-weight: bold;
+    }
+    #fountain-content li.scene-slug::before {
+      font-weight: normal;
+    }
+    #fountain-content li.character::before {
+      padding-right: 5em;
+    }
+    #menu {
+      color: #ccc;
+      padding: none;
+      padding: 5px 30px 5px 30px;
+      font-size: 12px;
+      border-bottom: 1px solid #efefef;
+    }
+    #menu-controls {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    /* flex spacing */
+    #help-icon,
+    #url-input,
+    input[type='submit'] {
+      margin-right: 10px;
+    }
+    #menu-controls form {
+      flex-grow: 1; /* everything else is 0 */
+    }
+    #help-icon {
+      height: 12px;
+      width: 12px;
+      font-size: 12px;
+      line-height: 12px;
+      border-style: 1px solid #ccc;
+      border-radius: 50%;
+      padding: 1px;
+      text-align: center;
+      border-radius: 50%;
+      display: inline-block;
+      color: #ccc;
+      font-weight: 100;
+      border: 1px solid #ccc;
+      display: inline-block;
+      cursor: pointer;
+    }
+    #help-info {
+      font-size: medium;
+    }
+    img {
+      max-width: 100%;
+    }
+    form {
+      border: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
+    input {
+      border: 1px solid #ccc;
+      background-color: #fff;
+      padding: none;
+      margin: none;
+      font-size: 12px;
+      color: #ccc;
+      padding: 2px 4px;
+      display: inline-block;
+    }
+    #url-input {
+      color: #bbb;
+      flex-grow: 1;
+    }
+    #slide-index {
+      font-size: 12px;
+    }
+  </style>
+
+  <script src="http://mattdaly.github.io/Fountain.js/assets/js/fountain.min.js"></script>
+  <!--
+  <script src="https://gist.githubusercontent.com/kortina/dbdf78ceb6f2a9e0673235b0e1a4f594/raw/e4524d50020e51b38c781e47faff1295c7432203/jsfountain.js"></script>
+  -->
+  <script>
+    /* globals commonmark */
+    function loadMarkdown(url) {}
+    class FountainDiffer {
+      static responseCache = {};
+      static DEFAULT_URL =
+        'https://gist.githubusercontent.com/kortina/8f7413dbeb4e674666e94b8ee6331f71/raw/8320c9a6b42fc87e4257d0203fa8372d8e5a6066/tech-support-DRAFT.fountain.diff';
+        static USE_TEST_RAW = false;
+        static TEST_RAW = `
+diff --git a/tech-support-DRAFT-RAW-2021-04-06.fountain b/tech-support-DRAFT-RAW-2021-04-08.fountain
+index d30173f..8414f48 100644
+--- a/tech-support-DRAFT-RAW-2021-04-06.fountain
++++ b/tech-support-DRAFT-RAW-2021-04-08.fountain
+@@ -1,1196 +1,1402 @@
+ Title: Tech Support / DRAFT
+ Credit: written by Andrew Kortina
+ Draft Date: 26 Mar 2021
+ 
+ # Act I
+ 
+ EXT. OAKLAND - NIGHT
+ = A biker rides the streets of Oakland.
+ 
+ A BIKER (30s, wearing a FedEx jacket and has a big olive army duffle on her back) rides the streets of Oakland -- alone -- in the pitiless glow of the moon.
++[[TODO: she rides home first, then collects her stuff from her apt, loads her duffle, drops key in box, leaves]]
+ 
+ EXT. ELLIE’S FRONT PORCH - NIGHT
+ = The biker, Robin, shows up with a duffle.
+ 
+ The biker is at the front porch of a modest little West Oakland house. The door opens.
+ 
+ It’s Ellie’s roommate, PAUL (about 65, you would have said a Berkeley type 30 years ago but in 2021 his OD jacket and faded Levi’s say he wouldn’t live there if he could afford it).
+ 
+ PAUL
+ Well, well, well, look who it is...
+ /* boneyard */
+ 
+ He eyes the bulging army duffle.
+ 
+ PAUL (CONT’D)
+ Lotta’ deliveries tonight,  Robin?
+        `;
+
+      constructor(raw) {
+        this.raw = raw;
+        this.lines = [];
+      }
+
+      static initURL() {
+        var p = new URLSearchParams(document.location.search);
+        var u = p.get('url') || this.DEFAULT_URL;
+        var el = document.getElementById('url-input');
+        if (u && !el.value) {
+          el.value = u;
+        }
+      }
+
+      static formSubmit() {
+        console.log(`formSubmit: ${this.formValue()}`);
+        this.fetchRaw();
+        return false;
+      }
+
+      static formValue() {
+        var el = document.getElementById('url-input');
+        if (el) {
+          return el.value;
+        }
+      }
+
+      static fetchRaw() {
+        this.fetchRawFromURL(this.formValue());
+      }
+
+      static fetchRawFromURL(url) {
+        var raw = (this.USE_TEST_RAW) ? this.TEST_RAW : this.responseCache[url];
+        if (raw) {
+          this.onFetch(raw);
+        } else {
+          fetch(url)
+            .then((response) => response.text())
+            .then((result) => {
+              this.responseCache[url] = result;
+              this.onFetch(result);
+            });
+        }
+      }
+
+      static onFetch(result) {
+        window.DIFFER = new FountainDiffer(result);
+        window.DIFFER.parseAndRender(result);
+      }
+
+      parseRaw(raw) {
+        window.RAW = raw;
+        var that = this;
+        (raw || "").split(/\n/).map((line) => {
+          that.lines.push(line);
+        });
+      }
+
+      parseAndRender(raw) {
+        this.parseRaw(raw);
+        this.render();
+      }
+
+      static classGitAdd(line) {
+        return line.match(/^\+/) ? 'git-add' : null;
+      }
+
+      static classGitDelete(line) {
+        return line.match(/^-/) ? 'git-delete' : null;
+      }
+
+      static classHeading(line) {
+        return line.match(/^\s*#/) ? 'heading' : null;
+      }
+
+      static classSynopsis(line) {
+        return line.match(/^\s*\=/) ? 'synopsis' : null;
+      }
+
+      static classSceneSlug(line) {
+        return line.match(/^\s*(INT|EXT)\./) ? 'scene-slug' : null;
+      }
+
+      static classCharacter(line) {
+        // for some reason this expression is true for:
+        //  PAUL (CONT’D)
+        // but this method returns null....
+        return (
+          !this.classSceneSlug(line) 
+          && line.match(/[A-Z]/)
+          && !line.match(/[a-z]/)
+        ) ? 'character' : null;
+      }
+
+      static computeClasses(line) {
+        var classes =  [
+          this.classGitAdd(line),
+          this.classGitDelete(line),
+          this.classHeading(line),
+          this.classSynopsis(line),
+          this.classSceneSlug(line),
+          this.classCharacter(line)
+        ].filter(c => !!c);
+        // if (line.match(/CONT/)) {
+        //   debugger;
+        // }
+        return classes;
+      }
+
+      render() {
+        var d = document.createElement("ol");
+        this.lines.map(line => {
+          var p = document.createElement("li");
+          p.append(document.createTextNode(line));
+          p.className = FountainDiffer.computeClasses(line).join(" ");
+          d.appendChild(p);
+          // console.log(`render: ${line}`);
+        });
+        var fc = document.getElementById("fountain-content");
+        fc.innerHTML = '';
+        fc.appendChild(d);
+      }
+
+      prefetchImage(node, event) {
+        if (event.entering && node.type == 'image' && node.destination) {
+          var img = new Image();
+          img.src = node.destination;
+        }
+      }
+    }
+
+    function onDocReady(fn) {
+      // see if DOM is already available
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        // call on next available tick
+        setTimeout(fn, 1);
+      } else {
+        document.addEventListener('DOMContentLoaded', fn);
+      }
+    }
+
+    function moveTo(i) {
+      document.location.hash = `#${i}`;
+      renderIndex(i);
+    }
+
+    function currentIndex() {
+      var currentIndexStr = document.location.hash || '#0';
+      return parseInt(currentIndexStr.replace('#', ''), 10);
+    }
+
+    function moveLeft() {
+      moveTo(Math.max(currentIndex() - 1, 0));
+    }
+    function moveRight() {
+      var max = window.SLIDES ? window.SLIDES.length - 1 : 0;
+      moveTo(Math.min(currentIndex() + 1, max));
+    }
+
+    function onKey(e) {
+      if (e.target.nodeName == 'INPUT') {
+        return;
+      }
+      switch (e.code) {
+        case 'ArrowLeft':
+          captureEvent(e);
+          return moveLeft();
+        case 'ArrowRight':
+          captureEvent(e);
+          return moveRight();
+        case 'KeyN':
+          captureEvent(e);
+          return openSpeakerNotes();
+        case 'KeyM':
+          captureEvent(e);
+          return toggleMenu();
+        case 'Slash':
+          if (e.key == '?') {
+            captureEvent(e);
+            return toggleHelp();
+          }
+        default:
+          break;
+        // console.log(`code: ${e.code}`);
+      }
+    }
+
+    function captureEvent(e) {
+      if (e.target.nodeName == 'BODY') {
+        e.preventDefault();
+      }
+    }
+
+    function openSpeakerNotes() {
+      window.SN_WINDOW = window.open('slider-notes.html', 'secondary', 'width=600,height=1000');
+      window.SN_WINDOW.onload = function () {
+        renderSpeakerNotes(currentIndex());
+      };
+    }
+
+    function renderSpeakerNotes(i) {
+      if (window.SN_WINDOW) {
+        if (!window.SLIDES || window.SLIDES.length < i) {
+          return;
+        }
+        var writer = new commonmark.HtmlRenderer();
+        var s = window.SLIDES[i];
+        var html = writer.render(s.speakerNotes);
+        window.SN_WINDOW.render(html);
+      } else {
+        console.log('Speaker notes window is not open.');
+      }
+    }
+
+    function toggleMenu() {
+      toggleElementWithId('menu');
+    }
+
+    function toggleHelp() {
+      toggleElementWithId('help-info');
+    }
+
+    function toggleElementWithId(id) {
+      var el = document.getElementById(id);
+      var d = ['', 'none', null, undefined].includes(el.style.display) ? 'block' : 'none';
+      el.style.display = d;
+    }
+
+    onDocReady(function () {
+      FountainDiffer.initURL();
+      FountainDiffer.fetchRaw();
+      document.addEventListener('keydown', onKey); // keyup resulted in arrows still working
+      document.getElementById('help-icon').addEventListener('click', toggleHelp);
+    });
+  </script>
+  <body>
+    <div id="menu" style="display: block">
+      <div id="menu-controls">
+        <div id="help-icon" title="help">?</div>
+        <form onsubmit="return FountainDiffer.formSubmit();">
+          <input id="url-input" type="text" />
+          <input type="submit" value="Load" />
+        </form>
+        <div id="slide-index"></div>
+      </div>
+      <div id="help-info" style="display: none">
+        <pre>
+Keyboard Shortcuts
+n   open speaker notes
+→   next slide
+←   prev slide
+m   show / hide menu
+?   show / hide help
+                </pre
+        >
+      </div>
+    </div>
+    <div id="fountain-content"></div>
+  </body>
+</html>
