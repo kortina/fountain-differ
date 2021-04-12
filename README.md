@@ -29,7 +29,7 @@ I also added a few bells and whistles like printing line numbers (so reviewers c
 
 ```sh
 lines=50000
-git diff "-U$lines" \
+git diff --no-index "-U$lines" \
 tech-support-DRAFT-RAW-2021-04-06.fountain \
 tech-support-DRAFT-RAW-2021-04-08.fountain \
 | pbcopy
