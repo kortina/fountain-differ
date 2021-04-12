@@ -345,11 +345,13 @@ index d30173f..8414f48 100644
         ) ? 'character' : null;
       }
 
-      static classDialog(line, prevLine) {
+      static classDialog(line, prevClasses) {
         return (
-          prevLine && (
-            this.classCharacter(prevLine, line)
-            || this.classParenthetical(prevLine)
+          line.match(/[a-zA-Z]/) &&
+          (
+            prevClasses.includes('character')
+            || prevClasses.includes('parenthetical')
+            || prevClasses.includes('dialog')
           )
         ) ? 'dialog' : null;
       }
@@ -364,7 +366,7 @@ index d30173f..8414f48 100644
         ) ? 'parenthetical' : null;
       }
 
-      static computeClasses(line, prevLine, nextLine) {
+      static computeClasses(line, prevLine, nextLine, prevClasses) {
         var classes =  [
           this.classDiffSummary(line),
           this.classDiffAdd(line),
@@ -374,7 +376,7 @@ index d30173f..8414f48 100644
           this.classMiniSlug(line),
           this.classSceneSlug(line),
           this.classCharacter(line, nextLine),
-          this.classDialog(line, prevLine),
+          this.classDialog(line, prevClasses),
           this.classParenthetical(line)
         ].filter(c => !!c);
         // if (line.match(/CONT/)) {
@@ -397,6 +399,7 @@ index d30173f..8414f48 100644
       render() {
         var d = document.createElement("ol");
         var prevLine = null;
+        var prevClasses = [];
         this.lines.map((line, i) => {
           var nextLine = null;
           if (i < this.lines.length - 1) {
@@ -406,7 +409,9 @@ index d30173f..8414f48 100644
           e.addEventListener('click', FountainDiffer.onClickRow);
           e.id = `L${i}`;
           var s = document.createElement("span");
-          s.className = FountainDiffer.computeClasses(line, prevLine, nextLine).join(" ");
+          var classes = FountainDiffer.computeClasses(line, prevLine, nextLine, prevClasses);
+          prevClasses = classes;
+          s.className = classes.join(" ");
           s.append(document.createTextNode(line));
           e.appendChild(s);
           d.appendChild(e);
