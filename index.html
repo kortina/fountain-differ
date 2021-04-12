@@ -34,8 +34,9 @@
       content: counter(li);
       color: #cccccc;
       display: inline-block;
-      width: 5em;
+      width: 6em;
       margin-left: -5em;
+      padding-left: 1em;
       position: absolute;
     }
     #fountain-content li,
@@ -44,6 +45,10 @@
       padding: 0;
       white-space: pre-wrap;
       text-indent: -0.6em;
+    }
+    /* make sure to render empty lines */
+    #fountain-content li span:empty::before {
+      content: " ";
     }
     .diff-summary {
       color: rgb(111, 66, 193);
@@ -65,11 +70,15 @@
     .synopsis {
       opacity: 0.50;
     }
+    .mini-slug {
+      font-weight: bold;
+    }
     .scene-slug {
       font-weight: bold;
     }
     .character {
       padding-left: 19ch;
+      font-weight: bold;
     }
     .dialog {
       padding-left: 10ch;
@@ -78,6 +87,11 @@
     }
     .parenthetical {
       padding-left: 14ch;
+    }
+    .anchor-selected, li.anchor-selected::before {
+      border-top: 1px solid #fff100;
+      background: rgb(255, 251, 221);
+      border-bottom: 1px solid #fff100;
     }
     #menu {
       color: #ccc;
@@ -154,12 +168,12 @@
   -->
   <script>
     /* globals commonmark */
+    /*
+http://localhost:8000/?url=https%3A%2F%2Fgist.githubusercontent.com%2Fkortina%2F8f7413dbeb4e674666e94b8ee6331f71%2Fraw%2F8320c9a6b42fc87e4257d0203fa8372d8e5a6066%2Ftech-support-DRAFT.fountain.diff
+    */
     function loadMarkdown(url) {}
     class FountainDiffer {
       static responseCache = {};
-      static DEFAULT_URL =
-        'https://gist.githubusercontent.com/kortina/8f7413dbeb4e674666e94b8ee6331f71/raw/8320c9a6b42fc87e4257d0203fa8372d8e5a6066/tech-support-DRAFT.fountain.diff';
-        static USE_TEST_RAW = false;
         static TEST_RAW = `
 diff --git a/tech-support-DRAFT-RAW-2021-04-06.fountain b/tech-support-DRAFT-RAW-2021-04-08.fountain
 index d30173f..8414f48 100644
@@ -178,12 +192,14 @@ index d30173f..8414f48 100644
  A BIKER (30s, wearing a FedEx jacket and has a big olive army duffle on her back) rides the streets of Oakland -- alone -- in the pitiless glow of the moon.
 +[[TODO: she rides home first, then collects her stuff from her apt, loads her duffle, drops key in box, leaves]]
  
- EXT. ELLIE’S FRONT PORCH - NIGHT
+ EXT. ELLIE'S FRONT PORCH - NIGHT
  = The biker, Robin, shows up with a duffle.
  
  The biker is at the front porch of a modest little West Oakland house. The door opens.
  
- It’s Ellie’s roommate, PAUL (about 65, you would have said a Berkeley type 30 years ago but in 2021 his OD jacket and faded Levi’s say he wouldn’t live there if he could afford it).
+ It's Ellie's roommate, PAUL (about 65, you would have said a Berkeley type 30 years ago but in 2021 his OD jacket and faded Levi's say he wouldn't live there if he could afford it).
+
+ IN THE DOORWAY MINI SLUG
  
  PAUL
  Well, well, well, look who it is...
@@ -191,8 +207,8 @@ index d30173f..8414f48 100644
  
  He eyes the bulging army duffle.
  
- PAUL (CONT’D)
- Lotta’ deliveries tonight,  Robin?
+ PAUL (CONT'D)
+ Lotta' deliveries tonight,  Robin?
         `;
 
       constructor(raw) {
@@ -200,9 +216,17 @@ index d30173f..8414f48 100644
         this.lines = [];
       }
 
-      static initURL() {
+      static qsURL() {
         var p = new URLSearchParams(document.location.search);
-        var u = p.get('url') || this.DEFAULT_URL;
+        return p.get('url');
+      }
+
+      static useTestRaw() {
+        return (this.qsURL() == "TEST");
+      }
+
+      static initURL() {
+        var u = this.qsURL();
         var el = document.getElementById('url-input');
         if (u && !el.value) {
           el.value = u;
@@ -210,8 +234,19 @@ index d30173f..8414f48 100644
       }
 
       static formSubmit() {
-        console.log(`formSubmit: ${this.formValue()}`);
-        this.fetchRaw();
+        var url = this.formValue();
+        if (`${url}` != "") {
+          var qsURL = this.qsURL();
+          if (qsURL == url) {
+            console.warning(`url already loaded`);
+          } else {
+            var l = document.location;
+            var e = encodeURIComponent(url);
+            var n = `${l.protocol}//${l.host}${l.pathname}?url=${e}`;
+            console.log(n);
+            document.location = n;
+          }
+        }
         return false;
       }
 
@@ -226,17 +261,23 @@ index d30173f..8414f48 100644
         this.fetchRawFromURL(this.formValue());
       }
 
+      static isValidURL(url) {
+        return /^(https?)\:\/\/[\w\.\-\:]+/i.test(url);
+      }
+
       static fetchRawFromURL(url) {
-        var raw = (this.USE_TEST_RAW) ? this.TEST_RAW : this.responseCache[url];
+        var raw = (this.useTestRaw()) ? this.TEST_RAW : this.responseCache[url];
         if (raw) {
           this.onFetch(raw);
-        } else {
+        } else if (this.isValidURL(url)) {
           fetch(url)
             .then((response) => response.text())
             .then((result) => {
               this.responseCache[url] = result;
               this.onFetch(result);
             });
+        } else {
+          toggleHelp();
         }
       }
 
@@ -287,9 +328,13 @@ index d30173f..8414f48 100644
         return line.match(/^\s*(INT|EXT)\./) ? 'scene-slug' : null;
       }
 
+      static classMiniSlug(line) {
+        return !line.match(/[a-z]/) && line.match(/[A-Z]/) ? 'mini-slug' : null;
+      }
+
       static classCharacter(line, nextLine) {
         // for some reason this expression is true for:
-        //  PAUL (CONT’D)
+        //  PAUL (CONT'D)
         // but this method returns null....
         return (
           !this.classSceneSlug(line) 
@@ -325,6 +370,7 @@ index d30173f..8414f48 100644
           this.classDiffDelete(line),
           this.classHeading(line),
           this.classSynopsis(line),
+          this.classMiniSlug(line),
           this.classSceneSlug(line),
           this.classCharacter(line, nextLine),
           this.classDialog(line, prevLine),
@@ -336,6 +382,17 @@ index d30173f..8414f48 100644
         return classes;
       }
 
+      static onClickRow(e) {
+        /* see: 
+        https://stackoverflow.com/a/23243996/382912
+        console.log(`onClickRow`);
+        console.log(e);
+        */
+       if (e.offsetX < 0 && e.target.id) {
+         document.location.hash = `#${e.target.id}`;
+       }
+      }
+
       render() {
         var d = document.createElement("ol");
         var prevLine = null;
@@ -345,6 +402,8 @@ index d30173f..8414f48 100644
             nextLine = this.lines[i+1];
           }
           var e = document.createElement("li");
+          e.addEventListener('click', FountainDiffer.onClickRow);
+          e.id = `L${i}`;
           var s = document.createElement("span");
           s.className = FountainDiffer.computeClasses(line, prevLine, nextLine).join(" ");
           s.append(document.createTextNode(line));
@@ -356,6 +415,7 @@ index d30173f..8414f48 100644
         var fc = document.getElementById("fountain-content");
         fc.innerHTML = '';
         fc.appendChild(d);
+        FountainDiffer.scrollToLineForAnchor();
       }
 
       prefetchImage(node, event) {
@@ -364,7 +424,58 @@ index d30173f..8414f48 100644
           img.src = node.destination;
         }
       }
+
+      static scrollToLineForAnchor() {
+        var h = document.location.hash || "";
+        var m = h.match(/(L\d+)/);
+        if (m) {
+          var el = document.getElementById(m[1]);
+          if (el) {
+            el.scrollIntoView(true);
+            addClass(el, "anchor-selected");
+          }
+        }
+      }
+
+      static elementFromURLString(urlString) {
+          var url = new URL(urlString);
+          if (url && url.hash) {
+            return document.getElementById(url.hash.substring(1));
+          }
+      }
+
+      static onHashChange(e) {
+        // un-highlight the previously highlighted row
+        var el;
+        el = FountainDiffer.elementFromURLString(e.oldURL)
+        if (el) {
+          removeClass(el, "anchor-selected");
+        }
+        el = FountainDiffer.elementFromURLString(e.newURL);
+        if (el) {
+          addClass(el, "anchor-selected");
+        }
+      }
     }
+    /***************************************************
+     * end FountainDiffer
+    ****************************************************/
+
+    function hasClass(ele, cls) {
+      return !!ele.className.match(new RegExp('(\\s|^)' + cls + '(\\s|$)'));
+    }
+
+    function addClass(ele, cls) {
+      if (!hasClass(ele, cls)) ele.className += " " + cls;
+    }
+
+    function removeClass(ele, cls) {
+      if (hasClass(ele, cls)) {
+        var reg = new RegExp('(\\s|^)' + cls + '(\\s|$)');
+        ele.className = ele.className.replace(reg, ' ');
+      }
+    }
+
 
     function onDocReady(fn) {
       // see if DOM is already available
@@ -416,6 +527,7 @@ index d30173f..8414f48 100644
     }
 
     onDocReady(function () {
+      window.addEventListener('hashchange', FountainDiffer.onHashChange, false);
       FountainDiffer.initURL();
       FountainDiffer.fetchRaw();
       document.addEventListener('keydown', onKey); // keyup resulted in arrows still working
@@ -434,7 +546,20 @@ index d30173f..8414f48 100644
       </div>
       <div id="help-info" style="display: none">
         <pre>
+Enter the raw URL for a GitHub gist that 
+contains the diff for 2 fountain files.
+
+For more help, see README at 
+<a
+href="https://github.com/kortina/fountain-differ">https://github.com/kortina/fountain-differ</a>.
+
+Load test:
+<a href="?url=TEST">test</a>.
+
+
+--------------------
 Keyboard Shortcuts
+--------------------
 m   show / hide menu
 ?   show / hide help
                 </pre
