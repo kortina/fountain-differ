@@ -1,6 +1,6 @@
 # Fountain Differ
 
-*Live demo [here](https://kortina.nyc/fountain-differ/).*
+*Live demo [here](https://kortina.nyc/fountain-differ/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkortina%2Ffountain-differ%2Fmaster%2Fexamples%2Fexample.diff#L22).*
 
 Share a nicely formatted diff of 2 fountain files.
 
