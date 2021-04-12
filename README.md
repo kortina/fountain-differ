@@ -4,6 +4,8 @@
 
 Share a nicely formatted diff of 2 fountain files.
 
+![image](https://user-images.githubusercontent.com/5924/114414999-28e40880-9b64-11eb-8586-963e46d3139f.png)
+
 ## Why?
 
 Some apps (like Highland 2) will allow you to track changes and compare differences between versions, but I wanted a way to generate a diff that I could send to any reader and allow them to view with just a web browser.
