@@ -4,9 +4,21 @@
 
 Share a nicely formatted diff of 2 fountain files.
 
+## Why?
+
+Some apps (like Highland 2) will allow you to track changes and compare differences between versions, but I wanted a way to generate a diff that I could send to any reader and allow them to view with just a web browser.
+
+I considered just using GitHub gists, but they don't wrap and indent text of fountain files in a very readable way.
+
+I also added a few bells and whistles like printing line numbers (so reviewers could comment to the effect of *"(123) this line is awkward"*) and linking to line numbers with `#anchors`.
+
 ##### TODO
 
 - [ ] handle boneyard and bracket comments
+- [ ] sample lef.fountain and right.fountain
+- [ ] package the diff script, dynamically compute `$lines`
+- [ ] upload and generate URL with diff script
+- [ ] add scene numbers
 
 ## Usage
 
