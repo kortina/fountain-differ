@@ -29,10 +29,11 @@ I also added a few bells and whistles like printing line numbers (so reviewers c
 
 ```sh
 lines=50000
-git diff --no-index "-U$lines" \
-tech-support-DRAFT-RAW-2021-04-06.fountain \
-tech-support-DRAFT-RAW-2021-04-08.fountain \
+git --no-pager diff --no-index "-U$lines" \
+older.fountain \
+newer.fountain \
 | pbcopy
+# OR, use `fountain-diff.sh`
 ```
 
 (2) Paste into a GitHub gist.
