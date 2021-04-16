@@ -300,7 +300,15 @@ index d30173f..8414f48 100644
         this.render();
       }
 
+      static stripDiffPrefix(line) {
+        if (line) {
+          return line.replace(/^[\s\-\+]+/, "");
+        }
+        return line;
+      }
+
       static lineIsBlank(line) {
+        line = this.stripDiffPrefix(line);
         return typeof(line) == "string" && line.match(/^\s*$/);
       }
 
@@ -318,22 +326,28 @@ index d30173f..8414f48 100644
       }
 
       static classHeading(line) {
+        line = this.stripDiffPrefix(line);
         return line.match(/^\s*#/) ? 'heading' : null;
       }
 
       static classSynopsis(line) {
+        line = this.stripDiffPrefix(line);
         return line.match(/^\s*\=/) ? 'synopsis' : null;
       }
 
       static classSceneSlug(line) {
+        line = this.stripDiffPrefix(line);
         return line.match(/^\s*(INT|EXT)\./) ? 'scene-slug' : null;
       }
 
       static classMiniSlug(line) {
+        line = this.stripDiffPrefix(line);
         return !line.match(/[a-z]/) && line.match(/[A-Z]/) ? 'mini-slug' : null;
       }
 
       static classCharacter(line, nextLine) {
+        line = this.stripDiffPrefix(line);
+        nextLine = this.stripDiffPrefix(nextLine);
         // for some reason this expression is true for:
         //  PAUL (CONT'D)
         // but this method returns null....
@@ -346,6 +360,7 @@ index d30173f..8414f48 100644
       }
 
       static classDialog(line, prevClasses) {
+        line = this.stripDiffPrefix(line);
         return (
           line.match(/[a-zA-Z]/) &&
           (
@@ -357,6 +372,7 @@ index d30173f..8414f48 100644
       }
 
       static classParenthetical(line) {
+        line = this.stripDiffPrefix(line);
         return (
           // prevLine 
           // && this.classCharacter(prevLine, line)
@@ -379,6 +395,9 @@ index d30173f..8414f48 100644
           this.classDialog(line, prevClasses),
           this.classParenthetical(line)
         ].filter(c => !!c);
+        // if (line.includes("BEDROOM - MORNING")) {
+        //   debugger;
+        // }
         // if (line.match(/CONT/)) {
         //   debugger;
         // }
