@@ -17,8 +17,6 @@ I also added a few bells and whistles like printing line numbers (so reviewers c
 ##### TODO
 
 - [ ] handle boneyard and bracket comments
-- [ ] sample lef.fountain and right.fountain
-- [ ] package the diff script, dynamically compute `$lines`
 - [ ] upload and generate URL with diff script
 - [ ] add scene numbers
 - [ ] goto next / prev change shortcuts
